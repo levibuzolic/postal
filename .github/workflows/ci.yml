@@ -8,6 +8,7 @@ on:
 
 env:
   MIX_ENV: test
+  POSTAL_BUILD: "1"
   LIBPOSTAL_VERSION: "1.1"
   LIBPOSTAL_DATA_DIR: /tmp/libpostal-data
 

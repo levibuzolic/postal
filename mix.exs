@@ -33,7 +33,8 @@ defmodule Postal.MixProject do
 
   defp deps do
     [
-      {:rustler, "~> 0.37.3"},
+      {:rustler_precompiled, "~> 0.9.0"},
+      {:rustler, "~> 0.37.3", optional: true},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false}
@@ -48,7 +49,7 @@ defmodule Postal.MixProject do
         "libpostal" => "https://github.com/openvenues/libpostal"
       },
       files:
-        ~w(lib native/postal_nif/src native/postal_nif/Cargo.toml native/postal_nif/Cargo.lock .formatter.exs mix.exs README.md LICENSE)
+        ~w(lib native/postal_nif/src native/postal_nif/Cargo.toml native/postal_nif/Cargo.lock checksum-*.exs .formatter.exs mix.exs README.md LICENSE)
     ]
   end
 

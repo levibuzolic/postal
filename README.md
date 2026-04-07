@@ -1,12 +1,32 @@
 # Postal
 
-Elixir bindings for [libpostal](https://github.com/openvenues/libpostal) -- a fast statistical parser/normalizer for street addresses around the world, powered by a Rust NIF via [Rustler](https://github.com/rusterlium/rustler).
+Elixir bindings for [libpostal](https://github.com/openvenues/libpostal), powered by a Rust NIF via [Rustler](https://github.com/rusterlium/rustler).
+
+## What is libpostal?
+
+[libpostal](https://github.com/openvenues/libpostal) is a C library for parsing and normalizing street addresses around the world. It uses statistical NLP models trained on OpenStreetMap data covering addresses in over 200 countries and territories. Unlike regex-based parsers, libpostal handles the enormous variety of global address formats -- from "123 Main St" to "1-2-3 Shibuya, Tokyo" to "Flat 4, 22 Acacia Avenue, London."
+
+libpostal provides two core operations:
+
+- **Address parsing** -- decompose a free-text address string into labeled components (house number, street, city, state, postcode, country, etc.)
+- **Address expansion** -- normalize an address by expanding abbreviations ("St" to "Street", "NYC" to "New York City") and producing canonical forms, useful for deduplication and matching
+
+Postal brings these capabilities to Elixir.
+
+## Why Postal?
+
+An Elixir libpostal binding already exists in [expostal](https://github.com/SweetIQ/expostal), but it has been unmaintained since 2017. Postal is a modern replacement with several advantages:
+
+- **Memory safety** -- uses Rust NIFs via Rustler instead of raw C NIFs, eliminating an entire class of memory bugs that can crash the BEAM
+- **Precompiled binaries** -- ships precompiled NIF binaries for common platforms (macOS, Linux), so most users don't need a Rust toolchain installed
+- **Maintained** -- actively developed and compatible with current Elixir/OTP versions
+- **Better API** -- `{:ok, result}` / `{:error, reason}` tuples with bang variants, atom-keyed maps, and language hints for address expansion
 
 ## Prerequisites
 
 - **Elixir** ~> 1.19
-- **Rust toolchain** -- install via [rustup](https://rustup.rs/)
-- **libpostal C library** -- must be installed with data files
+- **libpostal C library** -- must be installed with data files (required at runtime)
+- **Rust toolchain** -- only needed if building the NIF from source (see [Building from source](#building-from-source))
 
 ### Installing libpostal
 
@@ -92,6 +112,14 @@ end
 ```
 
 `setup/0` is idempotent -- subsequent calls are no-ops.
+
+## Building from source
+
+By default, Postal uses precompiled NIF binaries. To compile the Rust NIF from source (e.g. for development or unsupported platforms), you need the Rust toolchain installed and can set:
+
+```sh
+POSTAL_BUILD=1 mix deps.compile postal
+```
 
 ## Documentation
 

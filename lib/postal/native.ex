@@ -1,12 +1,24 @@
 defmodule Postal.Native do
   @moduledoc false
 
-  @libpostal_env Postal.Native.Env.build()
+  alias Postal.Native.Env
 
-  use Rustler,
+  @version Mix.Project.config()[:version]
+
+  use RustlerPrecompiled,
     otp_app: :postal,
     crate: "postal_nif",
-    env: @libpostal_env
+    base_url: "https://github.com/levibuzolic/postal/releases/download/v#{@version}",
+    force_build: System.get_env("POSTAL_BUILD") in ["1", "true"],
+    targets: [
+      "aarch64-apple-darwin",
+      "x86_64-apple-darwin",
+      "x86_64-unknown-linux-gnu",
+      "aarch64-unknown-linux-gnu"
+    ],
+    nif_versions: ["2.17"],
+    version: @version,
+    env: Env.build()
 
   @spec setup() :: :ok | {:error, String.t()}
   def setup, do: :erlang.nif_error(:nif_not_loaded)

@@ -39,7 +39,7 @@ CI runs all of these on every push and PR.
 
 ## Releasing
 
-Releases are a two-step process: build precompiled NIFs, then publish to Hex.
+Pushing a version tag triggers the full release pipeline automatically: build precompiled NIFs, generate checksums, create a GitHub release, and publish to Hex.
 
 ### One-time setup
 
@@ -53,31 +53,19 @@ Add a `HEX_API_KEY` secret to the `hex-publish` environment:
 
 1. **Bump the version** in `mix.exs` (`@version "x.y.z"`)
 2. **Commit and push** to `main`
-3. **Push a tag:**
+3. **Tag and push:**
    ```sh
    git tag vX.Y.Z
    git push origin vX.Y.Z
    ```
-4. **Wait for NIF builds** -- the `Build precompiled NIFs` workflow builds binaries for all targets and attaches them to a draft GitHub release. Check the [Actions tab](https://github.com/levibuzolic/postal/actions) to monitor progress.
-5. **Publish the release** in the GitHub UI:
-   - Go to [Releases](https://github.com/levibuzolic/postal/releases), find the draft release
-   - Click **Generate release notes**, review, and click **Publish release**
-6. The `Release` workflow triggers automatically:
+4. The release workflow runs automatically:
+   - Builds precompiled NIF binaries for all targets (in parallel)
    - Verifies the tag matches the version in `mix.exs`
-   - Downloads all precompiled binaries and generates checksums
+   - Generates checksums for all precompiled binaries
    - Publishes to [Hex](https://hex.pm/packages/postal)
+   - Creates a GitHub release with auto-generated notes
 
-### CLI alternative
-
-```sh
-# After bumping @version in mix.exs and committing:
-git tag v0.2.0
-git push origin v0.2.0
-# Wait for NIF builds to complete, then:
-gh release edit v0.2.0 --draft=false
-# Or create from scratch:
-gh release create v0.2.0 --generate-notes
-```
+Monitor progress in the [Actions tab](https://github.com/levibuzolic/postal/actions).
 
 ### Precompiled NIF targets
 

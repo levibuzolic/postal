@@ -1,15 +1,103 @@
 name: Release
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - "v*"
 
 permissions:
-  contents: read
+  contents: write
+
+env:
+  LIBPOSTAL_VERSION: "1.1"
+  NIF_VERSION: "2.17"
 
 jobs:
+  build:
+    name: NIF ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            runner: macos-15
+            install-libpostal: brew
+          - target: x86_64-apple-darwin
+            runner: macos-13
+            install-libpostal: brew
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-latest
+            install-libpostal: source
+          - target: aarch64-unknown-linux-gnu
+            runner: ubuntu-24.04-arm
+            install-libpostal: source
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache libpostal
+        id: cache-libpostal
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/local/lib/libpostal*
+            /usr/local/include/libpostal
+            /tmp/libpostal-data
+          key: libpostal-${{ env.LIBPOSTAL_VERSION }}-${{ matrix.target }}
+
+      - name: Install libpostal (brew)
+        if: matrix.install-libpostal == 'brew'
+        run: brew install libpostal
+
+      - name: Install libpostal (source)
+        if: matrix.install-libpostal == 'source' && steps.cache-libpostal.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y autoconf automake libtool pkg-config
+          git clone --depth 1 https://github.com/openvenues/libpostal /tmp/libpostal-src
+          cd /tmp/libpostal-src
+          ./bootstrap.sh
+          ./configure --datadir=/tmp/libpostal-data
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
+      - name: Ensure libpostal linker cache is up to date (Linux)
+        if: matrix.install-libpostal == 'source' && steps.cache-libpostal.outputs.cache-hit == 'true'
+        run: sudo ldconfig
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          target: ${{ matrix.target }}
+
+      - name: Build NIF
+        id: build-crate
+        uses: philss/rustler-precompiled-action@v1.1.5
+        with:
+          project-name: postal_nif
+          project-version: ${{ github.ref_name }}
+          target: ${{ matrix.target }}
+          nif-version: ${{ env.NIF_VERSION }}
+          use-cross: false
+          project-dir: native/postal_nif
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.build-crate.outputs.file-name }}
+          path: ${{ steps.build-crate.outputs.file-path }}
+
+      - name: Attach to GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.build-crate.outputs.file-path }}
+
   publish:
     name: Publish to Hex
+    needs: build
     runs-on: ubuntu-latest
     environment: hex-publish
 
@@ -39,3 +127,8 @@ jobs:
         run: mix hex.publish --yes
         env:
           HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true

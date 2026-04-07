@@ -1,5 +1,10 @@
 # Postal
 
+[![CI](https://github.com/levibuzolic/postal/actions/workflows/ci.yml/badge.svg)](https://github.com/levibuzolic/postal/actions/workflows/ci.yml)
+[![Hex.pm](https://img.shields.io/hexpm/v/postal.svg)](https://hex.pm/packages/postal)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-blue.svg)](https://hexdocs.pm/postal)
+[![License](https://img.shields.io/hexpm/l/postal.svg)](https://github.com/levibuzolic/postal/blob/main/LICENSE)
+
 Elixir bindings for [libpostal](https://github.com/openvenues/libpostal), powered by a Rust NIF via [Rustler](https://github.com/rusterlium/rustler).
 
 ## What is libpostal?

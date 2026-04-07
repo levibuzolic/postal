@@ -21,13 +21,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: jdx/mise-action@v4
 
       - name: Cache libpostal
         id: cache-libpostal
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             /usr/local/lib/libpostal*
@@ -53,21 +53,21 @@ jobs:
         run: sudo ldconfig
 
       - name: Restore dependencies cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: deps
           key: deps-${{ runner.os }}-${{ hashFiles('mise.toml') }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: deps-${{ runner.os }}-${{ hashFiles('mise.toml') }}-
 
       - name: Restore build cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: _build
           key: build-${{ runner.os }}-${{ hashFiles('mise.toml') }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: build-${{ runner.os }}-${{ hashFiles('mise.toml') }}-
 
       - name: Restore PLT cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: _build/dialyzer
           key: plt-${{ runner.os }}-${{ hashFiles('mise.toml') }}-${{ hashFiles('**/mix.lock') }}

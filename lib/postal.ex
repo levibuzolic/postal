@@ -88,6 +88,15 @@ defmodule Postal do
   """
   @type parsed_address :: %{optional(atom()) => String.t()}
 
+  # libpostal's fixed set of address component labels.
+  # Referencing them here ensures the atoms exist for String.to_existing_atom/1.
+  @known_labels ~w(
+    house_number road suburb city city_district state state_district
+    postcode country unit level staircase entrance po_box house
+    category near world_region island
+  )a
+  _ = @known_labels
+
   @doc """
   Pre-initializes libpostal by loading its data files into memory.
 
@@ -146,7 +155,7 @@ defmodule Postal do
       {:ok, components} ->
         map =
           Map.new(components, fn {label, value} ->
-            {String.to_atom(label), value}
+            {String.to_existing_atom(label), value}
           end)
 
         {:ok, map}

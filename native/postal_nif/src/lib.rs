@@ -1,5 +1,5 @@
 use postal::{Context, ExpandAddressOptions, InitOptions, ParseAddressOptions};
-use rustler::{Atom, Error, NifResult};
+use rustler::{Encoder, Env, Term};
 use std::sync::OnceLock;
 
 mod atoms {
@@ -11,7 +11,7 @@ mod atoms {
 
 static CONTEXT: OnceLock<Result<Context, String>> = OnceLock::new();
 
-fn get_context() -> NifResult<&'static Context> {
+fn get_context() -> Result<&'static Context, String> {
     let result = CONTEXT.get_or_init(|| {
         let mut ctx = Context::new();
         match ctx.init(InitOptions {
@@ -25,36 +25,52 @@ fn get_context() -> NifResult<&'static Context> {
 
     match result {
         Ok(ctx) => Ok(ctx),
-        Err(e) => Err(Error::Term(Box::new(e.clone()))),
+        Err(e) => Err(e.clone()),
+    }
+}
+
+fn ok_tuple<'a, T: Encoder>(env: Env<'a>, value: T) -> Term<'a> {
+    (atoms::ok(), value).encode(env)
+}
+
+fn error_tuple<'a>(env: Env<'a>, reason: &str) -> Term<'a> {
+    (atoms::error(), reason).encode(env)
+}
+
+#[rustler::nif(schedule = "DirtyCpu")]
+fn setup(env: Env) -> Term {
+    match get_context() {
+        Ok(_) => atoms::ok().encode(env),
+        Err(e) => error_tuple(env, &e),
     }
 }
 
 #[rustler::nif(schedule = "DirtyCpu")]
-fn setup() -> NifResult<Atom> {
-    get_context()?;
-    Ok(atoms::ok())
-}
-
-#[rustler::nif(schedule = "DirtyCpu")]
-fn parse_address(address: String) -> NifResult<(Atom, Vec<(String, String)>)> {
-    let ctx = get_context()?;
+fn parse_address<'a>(env: Env<'a>, address: String) -> Term<'a> {
+    let ctx = match get_context() {
+        Ok(ctx) => ctx,
+        Err(e) => return error_tuple(env, &e),
+    };
 
     let mut opts = ParseAddressOptions::new();
 
-    let parsed = ctx
-        .parse_address(&address, &mut opts)
-        .map_err(|e| Error::Term(Box::new(format!("parse_address failed: {:?}", e))))?;
-
-    let components: Vec<(String, String)> = parsed
-        .map(|c| (c.label.to_string(), c.value.to_string()))
-        .collect();
-
-    Ok((atoms::ok(), components))
+    match ctx.parse_address(&address, &mut opts) {
+        Ok(parsed) => {
+            let components: Vec<(String, String)> = parsed
+                .map(|c| (c.label.to_string(), c.value.to_string()))
+                .collect();
+            ok_tuple(env, components)
+        }
+        Err(e) => error_tuple(env, &format!("parse_address failed: {:?}", e)),
+    }
 }
 
 #[rustler::nif(schedule = "DirtyCpu")]
-fn expand_address(address: String, languages: Vec<String>) -> NifResult<(Atom, Vec<String>)> {
-    let ctx = get_context()?;
+fn expand_address<'a>(env: Env<'a>, address: String, languages: Vec<String>) -> Term<'a> {
+    let ctx = match get_context() {
+        Ok(ctx) => ctx,
+        Err(e) => return error_tuple(env, &e),
+    };
 
     let mut opts = ExpandAddressOptions::new();
 
@@ -63,13 +79,13 @@ fn expand_address(address: String, languages: Vec<String>) -> NifResult<(Atom, V
         opts.set_languages(&lang_strs);
     }
 
-    let expansions = ctx
-        .expand_address(&address, &mut opts)
-        .map_err(|e| Error::Term(Box::new(format!("expand_address failed: {:?}", e))))?;
-
-    let result: Vec<String> = expansions.map(|s| s.to_string()).collect();
-
-    Ok((atoms::ok(), result))
+    match ctx.expand_address(&address, &mut opts) {
+        Ok(expansions) => {
+            let result: Vec<String> = expansions.map(|s| s.to_string()).collect();
+            ok_tuple(env, result)
+        }
+        Err(e) => error_tuple(env, &format!("expand_address failed: {:?}", e)),
+    }
 }
 
 rustler::init!("Elixir.Postal.Native");

@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  MIX_ENV: test
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Quality & Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jdx/mise-action@v4
+
+      - name: Restore dependencies cache
+        uses: actions/cache@v4
+        with:
+          path: deps
+          key: deps-${{ runner.os }}-${{ hashFiles('mise.toml') }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: deps-${{ runner.os }}-${{ hashFiles('mise.toml') }}-
+
+      - name: Restore build cache
+        uses: actions/cache@v4
+        with:
+          path: _build
+          key: build-${{ runner.os }}-${{ hashFiles('mise.toml') }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: build-${{ runner.os }}-${{ hashFiles('mise.toml') }}-
+
+      - name: Restore PLT cache
+        uses: actions/cache@v4
+        with:
+          path: _build/dialyzer
+          key: plt-${{ runner.os }}-${{ hashFiles('mise.toml') }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: plt-${{ runner.os }}-${{ hashFiles('mise.toml') }}-
+
+      - name: Install dependencies
+        run: mix deps.get
+
+      - name: Compile (warnings as errors)
+        run: mix compile --warnings-as-errors
+
+      - name: Check formatting
+        run: mix format --check-formatted
+
+      - name: Credo
+        run: mix credo --strict
+
+      - name: Dialyzer
+        run: mix dialyzer
+
+      - name: Tests
+        run: mix test

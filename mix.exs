@@ -55,7 +55,7 @@ defmodule Postal.MixProject do
   defp docs do
     [
       main: "Postal",
-      extras: ["README.md", "LICENSE"]
+      extras: ["README.md", "CONTRIBUTING.md", "LICENSE"]
     ]
   end
 end

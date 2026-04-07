@@ -8,6 +8,8 @@ on:
 
 env:
   MIX_ENV: test
+  LIBPOSTAL_VERSION: "1.1"
+  LIBPOSTAL_DATA_DIR: /tmp/libpostal-data
 
 permissions:
   contents: read
@@ -21,6 +23,33 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: jdx/mise-action@v4
+
+      - name: Cache libpostal
+        id: cache-libpostal
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/local/lib/libpostal*
+            /usr/local/include/libpostal
+            /tmp/libpostal-data
+          key: libpostal-${{ env.LIBPOSTAL_VERSION }}-${{ runner.os }}
+
+      - name: Install libpostal from source
+        if: steps.cache-libpostal.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y autoconf automake libtool pkg-config
+          git clone --depth 1 https://github.com/openvenues/libpostal /tmp/libpostal-src
+          cd /tmp/libpostal-src
+          ./bootstrap.sh
+          ./configure --datadir=$LIBPOSTAL_DATA_DIR
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
+      - name: Ensure libpostal linker cache is up to date
+        if: steps.cache-libpostal.outputs.cache-hit == 'true'
+        run: sudo ldconfig
 
       - name: Restore dependencies cache
         uses: actions/cache@v4

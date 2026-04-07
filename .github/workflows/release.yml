@@ -1,0 +1,75 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  LIBPOSTAL_VERSION: "1.1"
+  LIBPOSTAL_DATA_DIR: /tmp/libpostal-data
+
+jobs:
+  publish:
+    name: Publish to Hex
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jdx/mise-action@v4
+
+      - name: Cache libpostal
+        id: cache-libpostal
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/local/lib/libpostal*
+            /usr/local/include/libpostal
+            /tmp/libpostal-data
+          key: libpostal-${{ env.LIBPOSTAL_VERSION }}-${{ runner.os }}
+
+      - name: Install libpostal from source
+        if: steps.cache-libpostal.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y autoconf automake libtool pkg-config
+          git clone --depth 1 https://github.com/openvenues/libpostal /tmp/libpostal-src
+          cd /tmp/libpostal-src
+          ./bootstrap.sh
+          ./configure --datadir=$LIBPOSTAL_DATA_DIR
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
+      - name: Ensure libpostal linker cache is up to date
+        if: steps.cache-libpostal.outputs.cache-hit == 'true'
+        run: sudo ldconfig
+
+      - name: Verify tag matches mix.exs version
+        run: |
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          MIX_VERSION=$(grep '@version "' mix.exs | sed 's/.*@version "//;s/"//')
+          if [ "$TAG_VERSION" != "$MIX_VERSION" ]; then
+            echo "::error::Tag version (v$TAG_VERSION) does not match mix.exs version ($MIX_VERSION)"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: mix deps.get
+
+      - name: Build package
+        run: mix hex.build
+
+      - name: Publish to Hex
+        run: mix hex.publish --yes
+        env:
+          HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true

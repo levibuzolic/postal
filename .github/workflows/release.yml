@@ -15,6 +15,7 @@ jobs:
   publish:
     name: Publish to Hex
     runs-on: ubuntu-latest
+    environment: hex-publish
 
     steps:
       - uses: actions/checkout@v4

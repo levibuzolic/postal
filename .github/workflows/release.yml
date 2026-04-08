@@ -73,12 +73,6 @@ jobs:
         with:
           target: ${{ matrix.target }}
 
-      - name: Install GNU tar (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew install gnu-tar
-          echo "$(brew --prefix)/opt/gnu-tar/libexec/gnubin" >> $GITHUB_PATH
-
       - name: Build NIF
         id: build-crate
         uses: philss/rustler-precompiled-action@v1.1.5
@@ -87,7 +81,9 @@ jobs:
           project-version: ${{ github.ref_name }}
           target: ${{ matrix.target }}
           nif-version: ${{ env.NIF_VERSION }}
-          use-cross: false
+          # Empty string instead of false to work around composite action bug
+          # where string 'false' is truthy and triggers cross installation
+          use-cross: ""
           project-dir: native/postal_nif
 
       - name: Upload artifact

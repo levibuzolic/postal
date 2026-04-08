@@ -26,11 +26,6 @@ jobs:
             install-libpostal: brew
             libpostal-lib: /opt/homebrew/lib
             libpostal-include: /opt/homebrew/include
-          - target: x86_64-apple-darwin
-            runner: macos-13
-            install-libpostal: brew
-            libpostal-lib: /usr/local/lib
-            libpostal-include: /usr/local/include
           - target: x86_64-unknown-linux-gnu
             runner: ubuntu-latest
             install-libpostal: source

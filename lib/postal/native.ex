@@ -12,7 +12,6 @@ defmodule Postal.Native do
     force_build: System.get_env("POSTAL_BUILD") in ["1", "true"],
     targets: [
       "aarch64-apple-darwin",
-      "x86_64-apple-darwin",
       "x86_64-unknown-linux-gnu",
       "aarch64-unknown-linux-gnu"
     ],

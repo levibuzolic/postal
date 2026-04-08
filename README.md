@@ -1,4 +1,4 @@
-# Postal
+# Elixir Postal
 
 [![CI](https://github.com/levibuzolic/postal/actions/workflows/ci.yml/badge.svg)](https://github.com/levibuzolic/postal/actions/workflows/ci.yml)
 [![Hex.pm](https://img.shields.io/hexpm/v/postal.svg)](https://hex.pm/packages/postal)

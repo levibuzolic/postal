@@ -131,8 +131,19 @@ jobs:
 
       - name: Generate checksums
         run: |
-          # Create placeholder so compilation doesn't fail on missing checksum file
-          echo "%{}" > checksum-Elixir.Postal.Native.exs
+          # Download all NIF artifacts and generate checksum file before compilation,
+          # since RustlerPrecompiled verifies checksums during compile.
+          mkdir -p _build/checksums
+          gh release download ${{ github.ref_name }} --repo ${{ github.repository }} --pattern "*.tar.gz" --dir _build/checksums
+          CHECKSUM_CONTENT="%{\n"
+          for f in _build/checksums/*.tar.gz; do
+            HASH=$(sha256sum "$f" | cut -d' ' -f1)
+            NAME=$(basename "$f")
+            CHECKSUM_CONTENT+="  \"${NAME}\" => \"sha256:${HASH}\",\n"
+          done
+          CHECKSUM_CONTENT+="}"
+          echo -e "$CHECKSUM_CONTENT" > checksum-Elixir.Postal.Native.exs
+          cat checksum-Elixir.Postal.Native.exs
           mix rustler_precompiled.download Postal.Native --all --print
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

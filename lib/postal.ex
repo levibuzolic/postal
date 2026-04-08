@@ -116,7 +116,7 @@ defmodule Postal do
   """
   @spec setup() :: :ok | {:error, String.t()}
   def setup do
-    Postal.Native.setup()
+    wrap_nif_call(fn -> Postal.Native.setup() end)
   end
 
   @doc """
@@ -145,7 +145,7 @@ defmodule Postal do
   """
   @spec parse_address(String.t()) :: {:ok, parsed_address()} | {:error, String.t()}
   def parse_address(address) when is_binary(address) do
-    case Postal.Native.parse_address(address) do
+    case wrap_nif_call(fn -> Postal.Native.parse_address(address) end) do
       {:ok, components} ->
         map =
           Map.new(components, fn {label, value} ->
@@ -208,7 +208,7 @@ defmodule Postal do
           {:ok, [String.t()]} | {:error, String.t()}
   def expand_address(address, opts \\ []) when is_binary(address) do
     languages = Keyword.get(opts, :languages, [])
-    Postal.Native.expand_address(address, languages)
+    wrap_nif_call(fn -> Postal.Native.expand_address(address, languages) end)
   end
 
   @doc """
@@ -225,5 +225,30 @@ defmodule Postal do
       {:ok, result} -> result
       {:error, reason} -> raise Postal.Error, message: reason
     end
+  end
+
+  @libpostal_not_found_message """
+  libpostal C library not found. The NIF could not be loaded.
+
+  Install libpostal before using this package:
+
+    macOS:  brew install libpostal
+    Linux:  See https://github.com/openvenues/libpostal#installation
+
+  If libpostal is installed in a non-standard location, ensure it is
+  on your library path (LD_LIBRARY_PATH on Linux, DYLD_LIBRARY_PATH on macOS).
+  """
+
+  defp wrap_nif_call(fun) do
+    fun.()
+  rescue
+    e in ErlangError ->
+      case e do
+        %ErlangError{original: :nif_not_loaded} ->
+          {:error, String.trim(@libpostal_not_found_message)}
+
+        _ ->
+          reraise e, __STACKTRACE__
+      end
   end
 end

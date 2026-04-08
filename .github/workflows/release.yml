@@ -24,15 +24,23 @@ jobs:
           - target: aarch64-apple-darwin
             runner: macos-15
             install-libpostal: brew
+            libpostal-lib: /opt/homebrew/lib
+            libpostal-include: /opt/homebrew/include
           - target: x86_64-apple-darwin
             runner: macos-13
             install-libpostal: brew
+            libpostal-lib: /usr/local/lib
+            libpostal-include: /usr/local/include
           - target: x86_64-unknown-linux-gnu
             runner: ubuntu-latest
             install-libpostal: source
+            libpostal-lib: /usr/local/lib
+            libpostal-include: /usr/local/include
           - target: aarch64-unknown-linux-gnu
             runner: ubuntu-24.04-arm
             install-libpostal: source
+            libpostal-lib: /usr/local/lib
+            libpostal-include: /usr/local/include
 
     steps:
       - uses: actions/checkout@v6
@@ -85,6 +93,9 @@ jobs:
           # where string 'false' is truthy and triggers cross installation
           use-cross: ""
           project-dir: native/postal_nif
+        env:
+          LIBRARY_PATH: ${{ matrix.libpostal-lib }}
+          BINDGEN_EXTRA_CLANG_ARGS: -I${{ matrix.libpostal-include }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7

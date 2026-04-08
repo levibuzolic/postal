@@ -8,6 +8,12 @@ name = "postal_nif"
 path = "src/lib.rs"
 crate-type = ["cdylib"]
 
+[features]
+default = ["nif_version_2_15"]
+nif_version_2_15 = ["rustler/nif_version_2_15"]
+nif_version_2_16 = ["rustler/nif_version_2_16"]
+nif_version_2_17 = ["rustler/nif_version_2_17"]
+
 [dependencies]
 postal = "0.2"
 rustler = "0.37"

@@ -73,6 +73,12 @@ jobs:
         with:
           target: ${{ matrix.target }}
 
+      - name: Install GNU tar (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install gnu-tar
+          echo "$(brew --prefix)/opt/gnu-tar/libexec/gnubin" >> $GITHUB_PATH
+
       - name: Build NIF
         id: build-crate
         uses: philss/rustler-precompiled-action@v1.1.5
